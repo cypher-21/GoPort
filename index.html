@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Port Scanner - Web Interface</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-network-wired"></i> Advanced Port Scanner</h1>
+            <p class="subtitle">Professional Network Security Tool - Web Interface</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Configuration Panel -->
+            <section class="config-panel">
+                <div class="card">
+                    <div class="card__header">
+                        <h2>Scan Configuration</h2>
+                    </div>
+                    <div class="card__body">
+                        <div class="form-grid">
+                            <!-- Target Configuration -->
+                            <div class="form-group">
+                                <label for="target" class="form-label">Target Host/IP Address</label>
+                                <input type="text" id="target" class="form-control" placeholder="e.g., 192.168.1.1, example.com" required>
+                                <div class="target-suggestions">
+                                    <span class="suggestion-tag" data-target="127.0.0.1">localhost</span>
+                                    <span class="suggestion-tag" data-target="example.com">example.com</span>
+                                    <span class="suggestion-tag" data-target="scanme.nmap.org">scanme.nmap.org</span>
+                                </div>
+                            </div>
+
+                            <!-- Port Configuration -->
+                            <div class="form-group">
+                                <label for="portPreset" class="form-label">Port Selection</label>
+                                <select id="portPreset" class="form-control">
+                                    <option value="common">Common Ports (16 ports)</option>
+                                    <option value="web">Web Services (7 ports)</option>
+                                    <option value="database">Database Services (7 ports)</option>
+                                    <option value="top100">Top 100 Ports (1-100)</option>
+                                    <option value="top1000">Top 1000 Ports (1-1000)</option>
+                                    <option value="custom">Custom Range</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group custom-ports hidden">
+                                <label for="customPorts" class="form-label">Custom Ports</label>
+                                <input type="text" id="customPorts" class="form-control" placeholder="80,443,8080 or 1-1000">
+                                <small class="form-help">Specify individual ports (80,443) or ranges (1-1000)</small>
+                            </div>
+
+                            <!-- Scan Method -->
+                            <div class="form-group">
+                                <label class="form-label">Scanning Method</label>
+                                <div class="radio-group">
+                                    <label class="radio-label">
+                                        <input type="radio" name="scanMethod" value="threaded" checked>
+                                        <span class="radio-text">
+                                            <strong>Multi-threaded</strong>
+                                            <small>Good balance of speed and reliability (200-500 ports/sec)</small>
+                                        </span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="scanMethod" value="async">
+                                        <span class="radio-text">
+                                            <strong>Asynchronous</strong>
+                                            <small>Fastest for large port ranges (1000+ ports/sec)</small>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Advanced Options -->
+                            <div class="form-group">
+                                <button type="button" id="toggleAdvanced" class="btn btn--outline btn--sm">
+                                    <i class="fas fa-cog"></i> Advanced Options
+                                </button>
+                            </div>
+
+                            <div id="advancedOptions" class="advanced-options hidden">
+                                <div class="options-grid">
+                                    <div class="form-group">
+                                        <label for="timeout" class="form-label">Timeout (seconds)</label>
+                                        <input type="number" id="timeout" class="form-control" min="0.1" max="10" step="0.1" value="1.0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="maxWorkers" class="form-label">Max Workers</label>
+                                        <input type="number" id="maxWorkers" class="form-control" min="10" max="1000" value="200">
+                                    </div>
+                                    <div class="form-group checkbox-group">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="bannerGrab" checked>
+                                            <span>Enable Banner Grabbing</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="scan-controls">
+                            <button id="startScan" class="btn btn--primary btn--lg">
+                                <i class="fas fa-play"></i> Start Scan
+                            </button>
+                            <button id="stopScan" class="btn btn--outline btn--lg hidden">
+                                <i class="fas fa-stop"></i> Stop Scan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Progress Section -->
+            <section id="progressSection" class="progress-section hidden">
+                <div class="card">
+                    <div class="card__header">
+                        <h3>Scanning Progress</h3>
+                        <div class="scan-stats">
+                            <span class="stat">
+                                <i class="fas fa-clock"></i>
+                                <span id="elapsed">00:00</span>
+                            </span>
+                            <span class="stat">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span id="portsPerSec">0</span> ports/sec
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card__body">
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div id="progressFill" class="progress-fill"></div>
+                            </div>
+                            <div class="progress-text">
+                                <span id="progressPercent">0%</span>
+                                <span id="progressPorts">0 / 0 ports</span>
+                            </div>
+                        </div>
+                        <div class="live-updates" id="liveUpdates"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="resultsSection" class="results-section hidden">
+                <div class="card">
+                    <div class="card__header">
+                        <h3>Scan Results</h3>
+                        <div class="results-actions">
+                            <div class="filter-controls">
+                                <select id="statusFilter" class="form-control">
+                                    <option value="all">All Ports</option>
+                                    <option value="open">Open Ports</option>
+                                    <option value="closed">Closed Ports</option>
+                                </select>
+                            </div>
+                            <button id="exportResults" class="btn btn--secondary btn--sm">
+                                <i class="fas fa-download"></i> Export JSON
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card__body">
+                        <div class="results-summary" id="resultsSummary"></div>
+                        <div class="results-table-container">
+                            <table class="results-table" id="resultsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Port</th>
+                                        <th>Status</th>
+                                        <th>Service</th>
+                                        <th>Banner</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Scan History -->
+            <section id="historySection" class="history-section">
+                <div class="card">
+                    <div class="card__header">
+                        <h3>Scan History</h3>
+                        <button id="clearHistory" class="btn btn--outline btn--sm">
+                            <i class="fas fa-trash"></i> Clear
+                        </button>
+                    </div>
+                    <div class="card__body">
+                        <div id="historyList" class="history-list">
+                            <p class="no-history">No previous scans</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Help Modal -->
+        <div id="helpModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Port Scanner Help</h3>
+                    <button id="closeHelp" class="btn btn--outline btn--sm">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h4>How to Use</h4>
+                    <ol>
+                        <li>Enter a target IP address or hostname</li>
+                        <li>Select port range or use presets</li>
+                        <li>Choose scanning method based on your needs</li>
+                        <li>Configure advanced options if needed</li>
+                        <li>Click "Start Scan" to begin</li>
+                    </ol>
+                    
+                    <h4>Scanning Methods</h4>
+                    <ul>
+                        <li><strong>Multi-threaded:</strong> Balanced approach, good for most use cases</li>
+                        <li><strong>Asynchronous:</strong> Fastest method for large port ranges</li>
+                    </ul>
+                    
+                    <h4>Port Presets</h4>
+                    <ul>
+                        <li><strong>Common:</strong> Most frequently used ports</li>
+                        <li><strong>Web:</strong> Web service ports (HTTP/HTTPS)</li>
+                        <li><strong>Database:</strong> Database service ports</li>
+                        <li><strong>Top 100/1000:</strong> Popular port ranges</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>
+                <button id="showHelp" class="btn btn--outline btn--sm">
+                    <i class="fas fa-question-circle"></i> Help
+                </button>
+                Advanced Port Scanner - Educational Demo
+            </p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
