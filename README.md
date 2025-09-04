@@ -34,7 +34,7 @@ A lightweight, efficient port scanner alternative to Nmap/RustScan, focusing on 
 ### Quick Installation
 ```bash
 # Clone or download the files
-git clone <repository-url>
+git clone https://github.com/cypher-21/GoPort.git
 cd advanced-port-scanner
 
 # Make scripts executable (Linux/macOS)
